@@ -1,9 +1,0 @@
-﻿   Qt/MSBuild: 3.5.0.0
-  Reading Qt configuration (C:/Qt/6.11.2/msvc2022_64/bin/qmake)
-   Qt: 6.11.2
-  moc TeamWork2.h
-  TeamWork2.cpp
-  main.cpp
-  qrc_TeamWork2.cpp
-  moc_TeamWork2.cpp
-  TeamWork2.vcxproj -> E:\TeamWork2\x64\Debug\TeamWork2.exe

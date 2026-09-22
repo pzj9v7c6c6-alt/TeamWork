@@ -1,7 +1,0 @@
-<Solution>
-  <Configurations>
-    <Platform Name="x64" />
-  </Configurations>
-  <Project Path="../BackEnd2/BackEnd2.vcxproj" Id="abfb80d4-5e36-4937-b600-3001a8fe3c23" />
-  <Project Path="TeamWork2.vcxproj" Id="507caeb3-fb6e-4043-9654-b9f1e41fd1f2" />
-</Solution>
