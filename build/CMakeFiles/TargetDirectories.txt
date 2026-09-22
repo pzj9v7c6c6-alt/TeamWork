@@ -1,0 +1,9 @@
+D:/Project1/TeamWork/build/CMakeFiles/PresentationLayer.dir
+D:/Project1/TeamWork/build/CMakeFiles/edit_cache.dir
+D:/Project1/TeamWork/build/CMakeFiles/rebuild_cache.dir
+D:/Project1/TeamWork/build/CMakeFiles/list_install_components.dir
+D:/Project1/TeamWork/build/CMakeFiles/install.dir
+D:/Project1/TeamWork/build/CMakeFiles/install/local.dir
+D:/Project1/TeamWork/build/CMakeFiles/install/strip.dir
+D:/Project1/TeamWork/build/CMakeFiles/PresentationLayer_autogen_timestamp_deps.dir
+D:/Project1/TeamWork/build/CMakeFiles/PresentationLayer_autogen.dir
