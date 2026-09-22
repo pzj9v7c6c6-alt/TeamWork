@@ -1,6 +1,6 @@
 🎨 Image Processing Studio
 
-A desktop image processing application built with C++17 and Qt 6.
+A desktop image processing application built with C++23 and Qt 6.
 
 The application provides 16 image processing filters and operations through an interactive graphical interface, with support for image preview, Undo/Redo, and a clean layered architecture.
 
