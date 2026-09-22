@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "TeamWork2\\x64\\Debug\\TeamWork2.obj",
+            "outputs": [
+                "TeamWork2\\x64\\Debug\\TeamWork2.cpp.obj.dt.module.json",
+                "TeamWork2\\x64\\Debug\\TeamWork2.cpp.obj.dt.d.json"
+            ],
+            "requires": []
+        }
+    ]
+}
