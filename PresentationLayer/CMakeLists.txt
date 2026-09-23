@@ -12,41 +12,83 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
+# ── Backend (Application) include path ──
+# Allows #include "Interfaces/IImageFilter.h", "Models/Image_Class.h", etc.
+set(APPLICATION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Application")
+
+# ── Presentation sources ──
 set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
-        mainwindow.ui
+        ImageEditorService.h
+        ImageEditorService.cpp
+        FilterRegistry.h
+        TopBar.h
+        TopBar.cpp
+        ImageViewWidget.h
+        ImageViewWidget.cpp
+        FilterCard.h
+        FilterCard.cpp
+        FiltersPanel.h
+        FiltersPanel.cpp
+        StatusBar.h
+        StatusBar.cpp
+        SaveImageDialog.h
+        SaveImageDialog.cpp
+)
+
+# ── Backend filter sources ──
+# Compiled as part of the presentation build since the Application
+# directory has no standalone CMake build target.
+set(BACKEND_SOURCES
+        ${APPLICATION_DIR}/ImageProcessing/Filters/BlackAndWhite/BlackAndWhiteFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/Brightness/BrightnessFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/Crop/CropFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/DetectEdges/DetectEdgesFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/Invert/InvertFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/Rotate/RotateFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/TVScanlines/TVScanlinesFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/WanoPurple/WanoPurpleFilter.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(PresentationLayer
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        ${BACKEND_SOURCES}
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET PresentationLayer APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
         add_library(PresentationLayer SHARED
             ${PROJECT_SOURCES}
+            ${BACKEND_SOURCES}
         )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(PresentationLayer
             ${PROJECT_SOURCES}
+            ${BACKEND_SOURCES}
         )
     endif()
 endif()
 
+target_include_directories(PresentationLayer PRIVATE ${APPLICATION_DIR})
+
 target_link_libraries(PresentationLayer PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
+# ── STB duplicate-symbol fix ──
+# Image_Class.h unconditionally #defines STB_IMAGE_IMPLEMENTATION before
+# including stb headers. Since every filter .cpp transitively includes
+# Image_Class.h, this would cause duplicate stb symbols at link time.
+# Defining STB_IMAGE_STATIC / STB_IMAGE_WRITE_STATIC makes all stb
+# functions "static", which confines them to each TU and eliminates
+# duplicate-symbol linker errors.
+target_compile_definitions(PresentationLayer PRIVATE
+    STB_IMAGE_STATIC
+    STB_IMAGE_WRITE_STATIC
+)
+
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
 if(${QT_VERSION} VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.PresentationLayer)
 endif()
