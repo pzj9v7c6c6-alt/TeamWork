@@ -1,4 +1,5 @@
 #include <iostream>
+#include <bits/stdc++.h>
 #include "Image_Class.h"
 using namespace std;
 
@@ -17,7 +18,6 @@ public:
                 unsigned char green = image(i, j, 1);
                 unsigned char blue  = image(i, j, 2);
                 
-            
                 unsigned char gray  = (red + green + blue) / 3;
 
                 image(i, j, 0) = gray;
@@ -60,6 +60,7 @@ private:
 
 public:
     MergeFilter(const string& secondImagePath) : secondImage(secondImagePath) {}
+
     void apply(Image& image) override {
         Image resizedSecond(image.width, image.height);
 
@@ -101,10 +102,9 @@ public:
 };
 int main() {
     Image img("luffy.jpg");
-    WanoFilter wano;
-    wano.apply(img);
+    MergeFilter fliv("mario.bmp");
+    fliv.apply(img);
     img.saveImage("output.jpg");
     cout << "Done! Filter applied successfully." << endl;
-
     return 0;
 }
