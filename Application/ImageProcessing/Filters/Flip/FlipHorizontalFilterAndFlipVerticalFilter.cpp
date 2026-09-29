@@ -1,40 +1,28 @@
-#include "pch.h"
-#include "BlackAndWhiteFilter.h"
+#include "FlipHorizontalFilterAndFlipVerticalFilter.h"
+#include <utility>
 
+using namespace std;
 
-FlipHorizontalFilterAndFlipVerticalFilter::BlackAndWhiteFilter() 
-{
-   
-}
+FlipHorizontalFilter::FlipHorizontalFilter() {}
 
-void BlackAndWhiteFilter::apply(Image& image) 
-{
-    
-    
-
-   
-    for (int x = 0; x < image.width; ++x) {
-        for (int y = 0; y < image.height; ++y) {
-
-           
-            unsigned char r = image.getPixel(x, y, 0);
-            unsigned char g = image.getPixel(x, y, 1);
-            unsigned char b = image.getPixel(x, y, 2);
-
-            
-            int avg = (r + g + b) / 3;
-
-           
-            unsigned char newValue = (avg >= 128) ? 255 : 0;
-
-            
-            image.setPixel(x, y, 0, newValue);
-            image.setPixel(x, y, 1, newValue);
-            image.setPixel(x, y, 2, newValue);
+void FlipHorizontalFilter::apply(Image& image) {
+    for (int i = 0; i < image.width / 2; i++) {
+        for (int j = 0; j < image.height; j++) {
+            for (int c = 0; c < 3; c++) {
+                swap(image(i, j, c), image(image.width - 1 - i, j, c));
+            }
         }
     }
 }
 
+FlipVerticalFilter::FlipVerticalFilter() {}
 
-//   بيجيب المتوسط علشان مدى سطوع البكسل 
-// لي 128 علشان  الوان البكسل من 255 ف المنوسط 128 
+void FlipVerticalFilter::apply(Image& image) {
+    for (int i = 0; i < image.width; i++) {
+        for (int j = 0; j < image.height / 2; j++) {
+            for (int c = 0; c < 3; c++) {
+                swap(image(i, j, c), image(i, image.height - 1 - j, c));
+            }
+        }
+    }
+}
