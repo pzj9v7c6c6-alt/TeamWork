@@ -1,9 +1,13 @@
 #pragma once
-#include "../../../../Interfaces/IImageFilter.h"
+#include "../../../Interfaces/IImageFilter.h"
+#include <string>
 
-class Grayfilter : public IImageFilter
+class MergeFilter : public IImageFilter
 {
+private:
+    std::string secondImagePath;
+
 public:
-    Grayfilter();
-    void apply(Image& img) override;
+    MergeFilter(const std::string& secondImagePath);
+    void apply(Image& image) override;
 };
