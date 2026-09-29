@@ -11,6 +11,7 @@
 #include "mainwindow.h"
 #include "FilterRegistry.h"
 #include "ImageEditorService.h"
+#include "ThemeManager.h"
 
 // Backend filter includes — only in this file and ImageEditorService.cpp
 #include "ImageProcessing/Filters/BlackAndWhite/BlackAndWhiteFilter.h"
@@ -21,13 +22,24 @@
 #include "ImageProcessing/Filters/TVScanlines/TVScanlinesFilter.h"
 #include "ImageProcessing/Filters/WanoPurple/WanoPurpleFilter.h"
 #include "ImageProcessing/Filters/Crop/CropFilter.h"
+#include "ImageProcessing/Filters/BlurFilter/BlurFilter.h"
+#include "ImageProcessing/Filters/FrameFilter/FrameFilter.h"
+#include "ImageProcessing/Filters/Gray/Grayfilter.h"
+#include "ImageProcessing/Filters/InfraredFilter/InfraredFilter.h"
+#include "ImageProcessing/Filters/Flip/FlipHorizontalFilterAndFlipVerticalFilter.h"
+// New concrete filters (added following existing IImageFilter pattern)
+#include "ImageProcessing/Filters/Contrast/ContrastFilter.h"
+#include "ImageProcessing/Filters/Saturation/SaturationFilter.h"
+#include "ImageProcessing/Filters/Hue/HueFilter.h"
+#include "ImageProcessing/Filters/Wanw/WanoFilter.h"
+#include "ImageProcessing/Filters/ResizeFilter/ResizeFilter.h"
 
 #include <QApplication>
 #include <QPalette>
 #include <QFont>
 
 // ---------------------------------------------------------------------------
-// Application-wide dark palette
+// Application-wide dark palette (default theme)
 // ---------------------------------------------------------------------------
 static void applyDarkTheme(QApplication& app)
 {
@@ -36,56 +48,8 @@ static void applyDarkTheme(QApplication& app)
     font.setHintingPreference(QFont::PreferFullHinting);
     app.setFont(font);
 
-    // Dark palette
-    QPalette p;
-    p.setColor(QPalette::Window,          QColor("#0a0e1a"));
-    p.setColor(QPalette::WindowText,      QColor("#f1f5f9"));
-    p.setColor(QPalette::Base,            QColor("#111827"));
-    p.setColor(QPalette::AlternateBase,   QColor("#1a2035"));
-    p.setColor(QPalette::ToolTipBase,     QColor("#1e293b"));
-    p.setColor(QPalette::ToolTipText,     QColor("#e2e8f0"));
-    p.setColor(QPalette::Text,            QColor("#f1f5f9"));
-    p.setColor(QPalette::Button,          QColor("#1e293b"));
-    p.setColor(QPalette::ButtonText,      QColor("#e2e8f0"));
-    p.setColor(QPalette::BrightText,      QColor("#ffffff"));
-    p.setColor(QPalette::Link,            QColor("#6366f1"));
-    p.setColor(QPalette::Highlight,       QColor("#6366f1"));
-    p.setColor(QPalette::HighlightedText, QColor("#ffffff"));
-    p.setColor(QPalette::Disabled, QPalette::Text,       QColor("#475569"));
-    p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor("#475569"));
-    app.setPalette(p);
-
-    // Global stylesheet for tooltips and common elements
-    app.setStyleSheet(R"(
-        QToolTip {
-            background: #1e293b;
-            color: #e2e8f0;
-            border: 1px solid #334155;
-            border-radius: 4px;
-            padding: 4px 8px;
-            font-size: 12px;
-        }
-        QMessageBox {
-            background: #111827;
-        }
-        QMessageBox QLabel {
-            color: #e2e8f0;
-        }
-        QMessageBox QPushButton {
-            background: #1e293b;
-            color: #e2e8f0;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 6px 16px;
-            min-width: 70px;
-        }
-        QMessageBox QPushButton:hover {
-            background: #334155;
-        }
-        QFileDialog {
-            background: #111827;
-        }
-    )");
+    // Apply the dark theme via ThemeManager (keeps ThemeManager as source of truth)
+    ThemeManager::instance()->applyTheme(ThemeManager::Dark);
 }
 
 // ---------------------------------------------------------------------------
@@ -99,12 +63,24 @@ static void registerBackendFilters(FilterRegistry& registry)
         std::make_shared<BlackAndWhiteFilter>()
     });
     registry.registerFilter({
+        "Grayscale", "Filters", "#94a3b8",
+        std::make_shared<Grayfilter>()
+    });
+    registry.registerFilter({
         "Invert Colors", "Filters", "#f472b6",
         std::make_shared<InvertFilter>()
     });
     registry.registerFilter({
         "Purple Tone", "Filters", "#a78bfa",
         std::make_shared<WanoPurpleFilter>()
+    });
+    registry.registerFilter({
+        "Infrared", "Filters", "#ef4444",
+        std::make_shared<InfraredFilter>()
+    });
+    registry.registerFilter({
+        "Warm Tone", "Filters", "#f97316",
+        std::make_shared<WanoFilter>()
     });
 
     // ── Effects ──
@@ -115,6 +91,14 @@ static void registerBackendFilters(FilterRegistry& registry)
     registry.registerFilter({
         "Detect Edges", "Effects", "#f59e0b",
         std::make_shared<DetectEdgesFilter>()
+    });
+    registry.registerFilter({
+        "Blur", "Effects", "#60a5fa",
+        std::make_shared<BlurFilter>()
+    });
+    registry.registerFilter({
+        "Border Frame", "Effects", "#ec4899",
+        std::make_shared<FrameFilter>()
     });
 
     // ── Adjustments ──
@@ -127,7 +111,7 @@ static void registerBackendFilters(FilterRegistry& registry)
         std::make_shared<DarkenFilter>()
     });
 
-    // ── Tools (rotations) ──
+    // ── Tools (rotations, flips, crop, resize) ──
     registry.registerFilter({
         "Rotate 90\xC2\xB0", "Tools", "#22d3ee",
         std::make_shared<RotateFilter>(90)
@@ -140,11 +124,22 @@ static void registerBackendFilters(FilterRegistry& registry)
         "Rotate 270\xC2\xB0", "Tools", "#22d3ee",
         std::make_shared<RotateFilter>(270)
     });
-
-    // Note: CropFilter requires interactive (x, y, w, h) parameters.
-    // It is not registered here because there is no interactive crop
-    // UI yet. When a crop tool is built, it should be added here with
-    // a dialog or interactive selection mechanism.
+    registry.registerFilter({
+        "Flip Horizontal", "Tools", "#22d3ee",
+        std::make_shared<FlipHorizontalFilter>()
+    });
+    registry.registerFilter({
+        "Flip Vertical", "Tools", "#22d3ee",
+        std::make_shared<FlipVerticalFilter>()
+    });
+    registry.registerFilter({
+        "Crop to Region", "Tools", "#10b981",
+        std::make_shared<CropFilter>(0, 0, 100, 100)
+    });
+    registry.registerFilter({
+        "Resize Image", "Tools", "#06b6d4",
+        std::make_shared<ResizeFilter>(800, 600)
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -153,7 +148,7 @@ static void registerBackendFilters(FilterRegistry& registry)
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
-    app.setApplicationName("Image Studio");
+    app.setApplicationName("GYYM Studio");
     app.setOrganizationName("TeamWork");
 
     applyDarkTheme(app);

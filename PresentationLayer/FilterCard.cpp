@@ -5,12 +5,13 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
+#include "ThemeManager.h"
 
 FilterCard::FilterCard(const QString& name, const QString& iconColor, int index,
                        QWidget* parent)
     : QWidget(parent)
     , m_name(name)
-    , m_iconColor(iconColor.isEmpty() ? "#6366f1" : iconColor)
+    , m_iconColor(iconColor.isEmpty() ? "#3b82f6" : iconColor)
     , m_index(index)
 {
     setFixedSize(96, 92);
@@ -57,12 +58,10 @@ void FilterCard::setThumbnail(const QPixmap& pixmap)
     m_thumbnail = pixmap;
     if (!m_thumbnail.isNull()) {
         QPixmap scaled = m_thumbnail.scaled(80, 52, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
-        // Crop to 80x52
         int x = (scaled.width() - 80) / 2;
         int y = (scaled.height() - 52) / 2;
         QPixmap cropped = scaled.copy(x, y, 80, 52);
 
-        // Make rounded thumbnail
         QPixmap rounded(80, 52);
         rounded.fill(Qt::transparent);
         {
@@ -119,18 +118,19 @@ void FilterCard::paintEvent(QPaintEvent* /*event*/)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
-    QColor bg;
-    QColor border;
+    auto* tm = ThemeManager::instance();
+    QColor accent = tm->accentColor();
 
+    QColor bg, border;
     if (m_selected) {
-        bg = QColor("#1e1b4b");
-        border = QColor("#6366f1");
+        bg = accent.darker(300);
+        border = accent;
     } else if (m_hovered) {
-        bg = QColor("#1f293d");
-        border = QColor("#3b82f6");
+        bg = tm->hoverBg();
+        border = accent;
     } else {
-        bg = QColor("#141b2b");
-        border = QColor("#222f46");
+        bg = tm->inputBg();
+        border = tm->borderColor();
     }
 
     QPainterPath path;
@@ -142,9 +142,9 @@ void FilterCard::paintEvent(QPaintEvent* /*event*/)
     p.setPen(pen);
     p.drawPath(path);
 
-    // Selected checkmark circle on top-right badge (exactly like reference image)
+    // Selected checkmark
     if (m_selected) {
-        p.setBrush(QColor("#6366f1"));
+        p.setBrush(accent);
         p.setPen(Qt::NoPen);
         p.drawEllipse(QPointF(width() - 11, 11), 8, 8);
 
@@ -156,6 +156,8 @@ void FilterCard::paintEvent(QPaintEvent* /*event*/)
 
 void FilterCard::updateStyle()
 {
+    auto* tm = ThemeManager::instance();
+
     if (m_thumbnail.isNull()) {
         QString iconStyle = QString(R"(
             QLabel {
@@ -170,7 +172,8 @@ void FilterCard::updateStyle()
         m_iconLabel->setStyleSheet(iconStyle);
     }
 
-    QString nameColor = m_selected ? "#ffffff" : (m_hovered ? "#f1f5f9" : "#94a3b8");
+    QColor nameCol = m_selected ? tm->textColor()
+                                : (m_hovered ? tm->textColor() : tm->dimTextColor());
     m_nameLabel->setStyleSheet(QString(R"(
         QLabel {
             color: %1;
@@ -178,5 +181,5 @@ void FilterCard::updateStyle()
             font-weight: %2;
             background: transparent;
         }
-    )").arg(nameColor, m_selected ? "700" : "500"));
+    )").arg(nameCol.name(), m_selected ? "700" : "500"));
 }

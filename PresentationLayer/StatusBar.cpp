@@ -41,17 +41,17 @@ const char* kSliderStyle = R"(
         border-radius: 2px;
     }
     QSlider::handle:horizontal {
-        background: #6366f1;
+        background: #3b82f6;
         width: 14px;
         height: 14px;
         margin: -5px 0;
         border-radius: 7px;
     }
     QSlider::handle:horizontal:hover {
-        background: #818cf8;
+        background: #60a5fa;
     }
     QSlider::sub-page:horizontal {
-        background: #6366f1;
+        background: #3b82f6;
         border-radius: 2px;
     }
 )";

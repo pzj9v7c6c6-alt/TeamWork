@@ -6,6 +6,7 @@ CMakeLists.txt.user
 CMakeLists.txt.user.*
 
 
+build/
 build-*/
 *.o
 *.obj

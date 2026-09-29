@@ -5,10 +5,7 @@
 class QPushButton;
 
 /**
- * @brief Top application bar with branding and action buttons.
- *
- * Visually matches the reference: dark header with "Image Studio" branding
- * on the left, action buttons (Load, Save, Undo, Redo, Clear) on the right.
+ * @brief Top application bar with GYYM branding and action buttons.
  */
 class TopBar : public QWidget {
     Q_OBJECT
@@ -29,10 +26,10 @@ signals:
     void clearClicked();
 
 private:
-    QPushButton* m_loadBtn = nullptr;
-    QPushButton* m_saveBtn = nullptr;
-    QPushButton* m_undoBtn = nullptr;
-    QPushButton* m_redoBtn = nullptr;
+    QPushButton* m_loadBtn  = nullptr;
+    QPushButton* m_saveBtn  = nullptr;
+    QPushButton* m_undoBtn  = nullptr;
+    QPushButton* m_redoBtn  = nullptr;
     QPushButton* m_clearBtn = nullptr;
 
     QPushButton* createActionButton(const QString& text, const QString& iconChar,

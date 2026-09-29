@@ -19,6 +19,15 @@ class IImageFilter;
  * manipulate Image objects or call filter algorithms.
  *
  * Internally owns Image objects and converts to QImage for display.
+ *
+ * FILTER STACKING:
+ * applyFilter() / applyBrightness() / applyContrast() / applySaturation() / applyHue()
+ * all operate on the CURRENT processed state (not always reset from original).
+ * This allows stacking multiple filters in sequence.
+ *
+ * applyFilterToQImage() is exposed so the presentation layer can apply a
+ * filter to an arbitrary QImage (e.g., a sticker) without touching backend
+ * architecture.
  */
 class ImageEditorService : public QObject {
     Q_OBJECT
@@ -31,9 +40,26 @@ public:
     bool loadImage(const QString& filePath);
     bool saveImage(const QString& filePath);
 
-    // --- Filter application ---
+    // --- Filter application (stacks on current state) ---
     bool applyFilter(int filterIndex);
     bool applyBrightness(int delta);
+    bool applyContrast(int value);
+    bool applySaturation(int value);
+    bool applyHue(int degrees);
+    bool applyCrop(int x, int y, int width, int height);
+    bool applyFreeRotation(int angle);
+    bool applyResize(int newWidth, int newHeight);
+
+    /**
+     * @brief Apply a registered filter to an arbitrary QImage (for stickers).
+     * Returns the filtered QImage. Does NOT affect the main image state or history.
+     */
+    QImage applyFilterToQImage(int filterIndex, const QImage& source) const;
+    QImage applyBrightnessToQImage(int delta, const QImage& source) const;
+    QImage applyContrastToQImage(int value, const QImage& source) const;
+    QImage applySaturationToQImage(int value, const QImage& source) const;
+    QImage applyHueToQImage(int degrees, const QImage& source) const;
+    QImage applyRotationToQImage(int angle, const QImage& source) const;
 
     // --- History ---
     bool canUndo() const;
@@ -43,8 +69,17 @@ public:
 
     // --- State ---
     void clear();
+    bool resetToOriginal();
     bool hasImage() const;
     bool hasProcessedImage() const;
+    QImage currentCommittedQImage() const;
+
+    /**
+     * @brief Push an externally-composited QImage as the new processed state.
+     * Used by region-filtering (SelectionTool) in the Presentation Layer.
+     * Pushes an undo snapshot first. Does NOT modify IImageFilter or Image_Class.
+     */
+    void setProcessedFromQImage(const QImage& img);
 
     // --- Display ---
     QImage originalQImage() const;

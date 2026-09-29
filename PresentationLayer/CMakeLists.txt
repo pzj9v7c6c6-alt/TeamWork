@@ -36,6 +36,19 @@ set(PROJECT_SOURCES
         StatusBar.cpp
         SaveImageDialog.h
         SaveImageDialog.cpp
+        # ── New PresentationLayer classes ──
+        ThemeManager.h
+        ThemeManager.cpp
+        AssetExplorer.h
+        AssetExplorer.cpp
+        StickerItem.h
+        StickerItem.cpp
+        SelectionTool.h
+        SelectionTool.cpp
+        CropTool.h
+        CropTool.cpp
+        EditorTarget.h
+        EditorTarget.cpp
 )
 
 # ── Backend filter sources ──
@@ -50,6 +63,17 @@ set(BACKEND_SOURCES
         ${APPLICATION_DIR}/ImageProcessing/Filters/Rotate/RotateFilter.cpp
         ${APPLICATION_DIR}/ImageProcessing/Filters/TVScanlines/TVScanlinesFilter.cpp
         ${APPLICATION_DIR}/ImageProcessing/Filters/WanoPurple/WanoPurpleFilter.cpp
+        # ── New concrete filters (same IImageFilter architecture) ──
+        ${APPLICATION_DIR}/ImageProcessing/Filters/Contrast/ContrastFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/Saturation/SaturationFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/Hue/HueFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/BlurFilter/BlurFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/FrameFilter/FrameFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/Gray/Grayfilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/InfraredFilter/InfraredFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/Flip/FlipHorizontalFilterAndFlipVerticalFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/ResizeFilter/ResizeFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/Wanw/WanoFilter.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

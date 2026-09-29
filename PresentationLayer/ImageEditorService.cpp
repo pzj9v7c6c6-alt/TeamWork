@@ -12,8 +12,15 @@
 #include "Interfaces/IImageFilter.h"
 #include "Models/Image_Class.h"
 #include "ImageProcessing/Filters/Brightness/BrightnessFilter.h"
+#include "ImageProcessing/Filters/Contrast/ContrastFilter.h"
+#include "ImageProcessing/Filters/Saturation/SaturationFilter.h"
+#include "ImageProcessing/Filters/Hue/HueFilter.h"
+#include "ImageProcessing/Filters/Crop/CropFilter.h"
+#include "ImageProcessing/Filters/Rotate/RotateFilter.h"
+#include "ImageProcessing/Filters/ResizeFilter/ResizeFilter.h"
 
 #include <QFileInfo>
+#include <QTransform>
 
 // ---------------------------------------------------------------------------
 // PIMPL
@@ -24,7 +31,7 @@ struct ImageEditorService::Impl {
     // The original loaded image (never modified after load)
     std::unique_ptr<Image> originalImage;
 
-    // The current processed image (result of applying filters)
+    // The current processed image (result of applying filters, stacked)
     std::unique_ptr<Image> processedImage;
 
     // Undo / redo stacks (store QImage snapshots to avoid stb in other TUs)
@@ -57,11 +64,35 @@ struct ImageEditorService::Impl {
         return copy;
     }
 
+    // Build an Image from a QImage (RGB888 assumed)
+    static std::unique_ptr<Image> fromQImage(const QImage& qimg) {
+        QImage src = qimg.convertToFormat(QImage::Format_RGB888);
+        auto img = std::make_unique<Image>(src.width(), src.height());
+        img->channels = 3;
+        for (int y = 0; y < src.height(); ++y) {
+            const unsigned char* srcLine = src.constScanLine(y);
+            for (int x = 0; x < src.width(); ++x) {
+                img->setPixel(x, y, 0, srcLine[x * 3 + 0]);
+                img->setPixel(x, y, 1, srcLine[x * 3 + 1]);
+                img->setPixel(x, y, 2, srcLine[x * 3 + 2]);
+            }
+        }
+        return img;
+    }
+
     void pushUndo(const QImage& snapshot) {
         if (undoStack.size() >= static_cast<size_t>(kMaxHistory))
             undoStack.erase(undoStack.begin());
         undoStack.push_back(snapshot);
         redoStack.clear();
+    }
+
+    // Returns the current working state as an Image (processedImage if present,
+    // else a clone of originalImage). Used for filter stacking.
+    std::unique_ptr<Image> currentWorkingImage() const {
+        if (processedImage)
+            return cloneImage(*processedImage);
+        return cloneImage(*originalImage);
     }
 };
 
@@ -130,7 +161,7 @@ bool ImageEditorService::saveImage(const QString& filePath)
 }
 
 // ---------------------------------------------------------------------------
-// Filter application
+// Filter application — STACKED (applies on current processed state)
 // ---------------------------------------------------------------------------
 bool ImageEditorService::applyFilter(int filterIndex)
 {
@@ -146,14 +177,14 @@ bool ImageEditorService::applyFilter(int filterIndex)
     }
 
     try {
-        // Save current state for undo (snapshot of processed or original)
+        // Save current state for undo
         QImage snapshot = d->processedImage
                               ? Impl::toQImage(*d->processedImage)
                               : Impl::toQImage(*d->originalImage);
         d->pushUndo(snapshot);
 
-        // Always apply on a fresh copy of the original
-        auto working = Impl::cloneImage(*d->originalImage);
+        // Apply on top of current state (STACKING behaviour)
+        auto working = d->currentWorkingImage();
         filters[filterIndex].filter->apply(*working);
 
         d->processedImage = std::move(working);
@@ -179,7 +210,8 @@ bool ImageEditorService::applyBrightness(int delta)
                               : Impl::toQImage(*d->originalImage);
         d->pushUndo(snapshot);
 
-        auto working = Impl::cloneImage(*d->originalImage);
+        // Stack on current state
+        auto working = d->currentWorkingImage();
         BrightnessFilter bf(delta);
         bf.apply(*working);
 
@@ -192,6 +224,271 @@ bool ImageEditorService::applyBrightness(int delta)
     catch (const std::exception& ex) {
         emit errorOccurred(
             QString("Brightness failed: %1").arg(QString::fromStdString(ex.what())));
+        return false;
+    }
+}
+
+bool ImageEditorService::applyContrast(int value)
+{
+    if (!d->originalImage || !d->originalImage->imageData) return false;
+
+    try {
+        QImage snapshot = d->processedImage
+                              ? Impl::toQImage(*d->processedImage)
+                              : Impl::toQImage(*d->originalImage);
+        d->pushUndo(snapshot);
+
+        auto working = d->currentWorkingImage();
+        ContrastFilter cf(value);
+        cf.apply(*working);
+
+        d->processedImage = std::move(working);
+
+        emit imageProcessed();
+        emit historyChanged();
+        return true;
+    }
+    catch (const std::exception& ex) {
+        emit errorOccurred(
+            QString("Contrast failed: %1").arg(QString::fromStdString(ex.what())));
+        return false;
+    }
+}
+
+bool ImageEditorService::applySaturation(int value)
+{
+    if (!d->originalImage || !d->originalImage->imageData) return false;
+
+    try {
+        QImage snapshot = d->processedImage
+                              ? Impl::toQImage(*d->processedImage)
+                              : Impl::toQImage(*d->originalImage);
+        d->pushUndo(snapshot);
+
+        auto working = d->currentWorkingImage();
+        SaturationFilter sf(value);
+        sf.apply(*working);
+
+        d->processedImage = std::move(working);
+
+        emit imageProcessed();
+        emit historyChanged();
+        return true;
+    }
+    catch (const std::exception& ex) {
+        emit errorOccurred(
+            QString("Saturation failed: %1").arg(QString::fromStdString(ex.what())));
+        return false;
+    }
+}
+
+bool ImageEditorService::applyHue(int degrees)
+{
+    if (!d->originalImage || !d->originalImage->imageData) return false;
+
+    try {
+        QImage snapshot = d->processedImage
+                              ? Impl::toQImage(*d->processedImage)
+                              : Impl::toQImage(*d->originalImage);
+        d->pushUndo(snapshot);
+
+        auto working = d->currentWorkingImage();
+        HueFilter hf(degrees);
+        hf.apply(*working);
+
+        d->processedImage = std::move(working);
+
+        emit imageProcessed();
+        emit historyChanged();
+        return true;
+    }
+    catch (const std::exception& ex) {
+        emit errorOccurred(
+            QString("Hue failed: %1").arg(QString::fromStdString(ex.what())));
+        return false;
+    }
+}
+
+bool ImageEditorService::applyCrop(int x, int y, int width, int height)
+{
+    if (!d->originalImage || !d->originalImage->imageData) return false;
+
+    try {
+        QImage snapshot = d->processedImage
+                              ? Impl::toQImage(*d->processedImage)
+                              : Impl::toQImage(*d->originalImage);
+        d->pushUndo(snapshot);
+
+        auto working = d->currentWorkingImage();
+        CropFilter cf(x, y, width, height);
+        cf.apply(*working);
+
+        d->processedImage = std::move(working);
+
+        emit imageProcessed();
+        emit historyChanged();
+        return true;
+    }
+    catch (const std::exception& ex) {
+        emit errorOccurred(
+            QString("Crop failed: %1").arg(QString::fromStdString(ex.what())));
+        return false;
+    }
+}
+
+bool ImageEditorService::applyFreeRotation(int angle)
+{
+    if (!hasImage() || angle == 0) return false;
+    try {
+        QImage current = currentCommittedQImage();
+        d->pushUndo(current);
+        d->redoStack.clear();
+
+        QTransform tfm;
+        tfm.rotate(angle);
+        QImage rotated = current.transformed(tfm, Qt::SmoothTransformation);
+        if (rotated.isNull()) return false;
+
+        d->processedImage = Impl::fromQImage(rotated);
+        emit imageProcessed();
+        emit historyChanged();
+        return true;
+    }
+    catch (const std::exception& ex) {
+        emit errorOccurred(
+            QString("Rotation failed: %1").arg(QString::fromStdString(ex.what())));
+        return false;
+    }
+}
+
+bool ImageEditorService::applyResize(int newWidth, int newHeight)
+{
+    if (!hasImage() || newWidth <= 0 || newHeight <= 0) return false;
+    try {
+        QImage current = currentCommittedQImage();
+        d->pushUndo(current);
+        d->redoStack.clear();
+
+        if (!d->processedImage) {
+            d->processedImage = Impl::cloneImage(*d->originalImage);
+        }
+        ResizeFilter rf(newWidth, newHeight);
+        rf.apply(*d->processedImage);
+
+        emit imageProcessed();
+        emit historyChanged();
+        return true;
+    }
+    catch (const std::exception& ex) {
+        emit errorOccurred(
+            QString("Resize failed: %1").arg(QString::fromStdString(ex.what())));
+        return false;
+    }
+}
+
+QImage ImageEditorService::applyFilterToQImage(int filterIndex, const QImage& source) const
+{
+    if (source.isNull()) return source;
+
+    const auto& filters = d->registry->filters();
+    if (filterIndex < 0 || filterIndex >= filters.size()) return source;
+
+    try {
+        // Convert QImage → Image, apply, convert back
+        auto img = Impl::fromQImage(source);
+        filters[filterIndex].filter->apply(*img);
+        return Impl::toQImage(*img);
+    }
+    catch (...) {
+        return source;
+    }
+}
+
+QImage ImageEditorService::applyBrightnessToQImage(int delta, const QImage& source) const
+{
+    if (source.isNull()) return source;
+    try {
+        auto img = Impl::fromQImage(source);
+        BrightnessFilter bf(delta);
+        bf.apply(*img);
+        return Impl::toQImage(*img);
+    }
+    catch (...) {
+        return source;
+    }
+}
+
+QImage ImageEditorService::applyContrastToQImage(int value, const QImage& source) const
+{
+    if (source.isNull()) return source;
+    try {
+        auto img = Impl::fromQImage(source);
+        ContrastFilter cf(value);
+        cf.apply(*img);
+        return Impl::toQImage(*img);
+    }
+    catch (...) {
+        return source;
+    }
+}
+
+QImage ImageEditorService::applySaturationToQImage(int value, const QImage& source) const
+{
+    if (source.isNull()) return source;
+    try {
+        auto img = Impl::fromQImage(source);
+        SaturationFilter sf(value);
+        sf.apply(*img);
+        return Impl::toQImage(*img);
+    }
+    catch (...) {
+        return source;
+    }
+}
+
+QImage ImageEditorService::applyHueToQImage(int degrees, const QImage& source) const
+{
+    if (source.isNull()) return source;
+    try {
+        auto img = Impl::fromQImage(source);
+        HueFilter hf(degrees);
+        hf.apply(*img);
+        return Impl::toQImage(*img);
+    }
+    catch (...) {
+        return source;
+    }
+}
+
+QImage ImageEditorService::applyRotationToQImage(int angle, const QImage& source) const
+{
+    if (source.isNull() || angle == 0) return source;
+    QTransform tfm;
+    tfm.rotate(angle);
+    return source.transformed(tfm, Qt::SmoothTransformation);
+}
+
+QImage ImageEditorService::currentCommittedQImage() const
+{
+    if (hasProcessedImage())
+        return processedQImage();
+    return originalQImage();
+}
+
+bool ImageEditorService::resetToOriginal()
+{
+    if (!d->originalImage || !d->originalImage->imageData) return false;
+    try {
+        QImage snapshot = d->processedImage
+                              ? Impl::toQImage(*d->processedImage)
+                              : Impl::toQImage(*d->originalImage);
+        d->pushUndo(snapshot);
+        d->processedImage = Impl::cloneImage(*d->originalImage);
+        emit imageProcessed();
+        emit historyChanged();
+        return true;
+    }
+    catch (...) {
         return false;
     }
 }
@@ -220,17 +517,7 @@ void ImageEditorService::undo()
     if (prev == origQImg) {
         d->processedImage.reset();
     } else {
-        // Reconstruct Image from QImage
-        auto restored = std::make_unique<Image>(prev.width(), prev.height());
-        for (int y = 0; y < prev.height(); ++y) {
-            const unsigned char* srcLine = prev.constScanLine(y);
-            for (int x = 0; x < prev.width(); ++x) {
-                restored->setPixel(x, y, 0, srcLine[x * 3 + 0]);
-                restored->setPixel(x, y, 1, srcLine[x * 3 + 1]);
-                restored->setPixel(x, y, 2, srcLine[x * 3 + 2]);
-            }
-        }
-        d->processedImage = std::move(restored);
+        d->processedImage = Impl::fromQImage(prev);
     }
 
     emit imageProcessed();
@@ -251,16 +538,7 @@ void ImageEditorService::redo()
     QImage next = d->redoStack.back();
     d->redoStack.pop_back();
 
-    auto restored = std::make_unique<Image>(next.width(), next.height());
-    for (int y = 0; y < next.height(); ++y) {
-        const unsigned char* srcLine = next.constScanLine(y);
-        for (int x = 0; x < next.width(); ++x) {
-            restored->setPixel(x, y, 0, srcLine[x * 3 + 0]);
-            restored->setPixel(x, y, 1, srcLine[x * 3 + 1]);
-            restored->setPixel(x, y, 2, srcLine[x * 3 + 2]);
-        }
-    }
-    d->processedImage = std::move(restored);
+    d->processedImage = Impl::fromQImage(next);
 
     emit imageProcessed();
     emit historyChanged();
@@ -274,6 +552,23 @@ void ImageEditorService::clear()
     d->processedImage.reset();
     d->undoStack.clear();
     d->redoStack.clear();
+
+    emit imageProcessed();
+    emit historyChanged();
+}
+
+void ImageEditorService::setProcessedFromQImage(const QImage& img)
+{
+    if (img.isNull()) return;
+
+    // Push current state to undo stack
+    QImage snapshot = d->processedImage
+                          ? Impl::toQImage(*d->processedImage)
+                          : (d->originalImage ? Impl::toQImage(*d->originalImage) : QImage{});
+    if (!snapshot.isNull())
+        d->pushUndo(snapshot);
+
+    d->processedImage = Impl::fromQImage(img);
 
     emit imageProcessed();
     emit historyChanged();
