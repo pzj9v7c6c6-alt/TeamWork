@@ -1,5 +1,5 @@
 #include "WanoFilter.h"
-#include <algorithm> // علشان يشتغل min
+#include <algorithm> 
 
 using namespace std;
 
