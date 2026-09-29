@@ -1,12 +1,10 @@
 #pragma once
-#include "../../../Interfaces/IImageFilter.h" 
+#include "../../../Interfaces/IImageFilter.h"
 
-class BlackAndWhiteFilter : public IImageFilter
+class WanoFilter : public IImageFilter
 {
 public:
-    BlackAndWhiteFilter();
+    WanoFilter();
 
-    void apply(Image& img) override;
-
+    void apply(Image& image) override;
 };
-
