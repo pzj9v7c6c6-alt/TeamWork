@@ -49,6 +49,8 @@ public:
     bool applyCrop(int x, int y, int width, int height);
     bool applyFreeRotation(int angle);
     bool applyResize(int newWidth, int newHeight);
+    bool applySkew(float skewX, float skewY);
+    bool applyOilPainting(int radius = 4, int levels = 20);
 
     /**
      * @brief Apply a registered filter to an arbitrary QImage (for stickers).
@@ -60,6 +62,8 @@ public:
     QImage applySaturationToQImage(int value, const QImage& source) const;
     QImage applyHueToQImage(int degrees, const QImage& source) const;
     QImage applyRotationToQImage(int angle, const QImage& source) const;
+    QImage applySkewToQImage(float skewX, float skewY, const QImage& source) const;
+    QImage applyOilPaintingToQImage(int radius, int levels, const QImage& source) const;
 
     // --- History ---
     bool canUndo() const;

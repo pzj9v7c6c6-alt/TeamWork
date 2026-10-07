@@ -74,6 +74,8 @@ set(BACKEND_SOURCES
         ${APPLICATION_DIR}/ImageProcessing/Filters/Flip/FlipHorizontalFilterAndFlipVerticalFilter.cpp
         ${APPLICATION_DIR}/ImageProcessing/Filters/ResizeFilter/ResizeFilter.cpp
         ${APPLICATION_DIR}/ImageProcessing/Filters/Wanw/WanoFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/SkewFilter/SkewFilter.cpp
+        ${APPLICATION_DIR}/ImageProcessing/Filters/OilPaintingFilter/OilPaintingFilter.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

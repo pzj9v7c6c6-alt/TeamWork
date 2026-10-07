@@ -17,5 +17,7 @@ enum class FilterType {
     Saturation,
     TVScanlines,
     WanoPurple,
-    Wanw
+    Wanw,
+    Skew,
+    OilPainting
 };

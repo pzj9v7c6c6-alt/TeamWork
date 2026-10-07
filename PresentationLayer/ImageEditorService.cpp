@@ -18,6 +18,8 @@
 #include "ImageProcessing/Filters/Crop/CropFilter.h"
 #include "ImageProcessing/Filters/Rotate/RotateFilter.h"
 #include "ImageProcessing/Filters/ResizeFilter/ResizeFilter.h"
+#include "ImageProcessing/Filters/SkewFilter/SkewFilter.h"
+#include "ImageProcessing/Filters/OilPaintingFilter/OilPaintingFilter.h"
 
 #include <QFileInfo>
 #include <QTransform>
@@ -386,6 +388,54 @@ bool ImageEditorService::applyResize(int newWidth, int newHeight)
     }
 }
 
+bool ImageEditorService::applySkew(float skewX, float skewY)
+{
+    if (!hasImage()) return false;
+    try {
+        QImage current = currentCommittedQImage();
+        d->pushUndo(current);
+        d->redoStack.clear();
+
+        auto working = d->currentWorkingImage();
+        SkewFilter sf(skewX, skewY);
+        sf.apply(*working);
+
+        d->processedImage = std::move(working);
+        emit imageProcessed();
+        emit historyChanged();
+        return true;
+    }
+    catch (const std::exception& ex) {
+        emit errorOccurred(
+            QString("Skew failed: %1").arg(QString::fromStdString(ex.what())));
+        return false;
+    }
+}
+
+bool ImageEditorService::applyOilPainting(int radius, int levels)
+{
+    if (!hasImage()) return false;
+    try {
+        QImage current = currentCommittedQImage();
+        d->pushUndo(current);
+        d->redoStack.clear();
+
+        auto working = d->currentWorkingImage();
+        OilPaintingFilter opf(radius, levels);
+        opf.apply(*working);
+
+        d->processedImage = std::move(working);
+        emit imageProcessed();
+        emit historyChanged();
+        return true;
+    }
+    catch (const std::exception& ex) {
+        emit errorOccurred(
+            QString("Oil Painting failed: %1").arg(QString::fromStdString(ex.what())));
+        return false;
+    }
+}
+
 QImage ImageEditorService::applyFilterToQImage(int filterIndex, const QImage& source) const
 {
     if (source.isNull()) return source;
@@ -466,6 +516,34 @@ QImage ImageEditorService::applyRotationToQImage(int angle, const QImage& source
     QTransform tfm;
     tfm.rotate(angle);
     return source.transformed(tfm, Qt::SmoothTransformation);
+}
+
+QImage ImageEditorService::applySkewToQImage(float skewX, float skewY, const QImage& source) const
+{
+    if (source.isNull()) return source;
+    try {
+        auto img = Impl::fromQImage(source);
+        SkewFilter sf(skewX, skewY);
+        sf.apply(*img);
+        return Impl::toQImage(*img);
+    }
+    catch (...) {
+        return source;
+    }
+}
+
+QImage ImageEditorService::applyOilPaintingToQImage(int radius, int levels, const QImage& source) const
+{
+    if (source.isNull()) return source;
+    try {
+        auto img = Impl::fromQImage(source);
+        OilPaintingFilter opf(radius, levels);
+        opf.apply(*img);
+        return Impl::toQImage(*img);
+    }
+    catch (...) {
+        return source;
+    }
 }
 
 QImage ImageEditorService::currentCommittedQImage() const

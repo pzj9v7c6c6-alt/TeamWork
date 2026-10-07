@@ -22,6 +22,7 @@
 #include <QSlider>
 #include <QLabel>
 #include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QCheckBox>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -1004,6 +1005,13 @@ QWidget* MainWindow::createSelectionBar()
     connect(resizeBtn, &QPushButton::clicked, this, &MainWindow::onOpenResizeDialog);
     row3->addWidget(resizeBtn, 1);
 
+    auto* skewBtn = new QPushButton("\xE2\xA4\x93  Skew", box);
+    skewBtn->setStyleSheet(kSmallActionBtnStyle);
+    skewBtn->setCursor(Qt::PointingHandCursor);
+    skewBtn->setToolTip("Skew image horizontally and/or vertically");
+    connect(skewBtn, &QPushButton::clicked, this, &MainWindow::onOpenSkewDialog);
+    row3->addWidget(skewBtn, 1);
+
     lay->addLayout(row3);
     return box;
 }
@@ -1194,6 +1202,16 @@ void MainWindow::onFilterSelected(int index)
 
     if (index >= 0 && index < allFilters.size() && allFilters[index].name.contains("Resize")) {
         onOpenResizeDialog();
+        return;
+    }
+
+    if (index >= 0 && index < allFilters.size() && allFilters[index].name.contains("Skew")) {
+        onOpenSkewDialog();
+        return;
+    }
+
+    if (index >= 0 && index < allFilters.size() && allFilters[index].name.contains("Oil Painting")) {
+        onOpenOilPaintingDialog();
         return;
     }
 
@@ -1592,6 +1610,128 @@ void MainWindow::onOpenResizeDialog()
         int newW = widthSpin->value();
         int newH = heightSpin->value();
         m_service->applyResize(newW, newH);
+    }
+}
+
+void MainWindow::onOpenSkewDialog()
+{
+    if (!m_service->hasImage()) return;
+
+    QDialog dlg(this);
+    dlg.setWindowTitle("Skew Image");
+    dlg.setFixedWidth(320);
+    dlg.setStyleSheet("background: #0f1524; color: #cbd5e1; font-size: 12px;");
+
+    auto* layout = new QVBoxLayout(&dlg);
+    layout->setContentsMargins(18, 18, 18, 18);
+    layout->setSpacing(14);
+
+    auto* titleLbl = new QLabel("Skew / Distort Image", &dlg);
+    titleLbl->setStyleSheet("font-size: 14px; font-weight: 700; color: #38bdf8;");
+    layout->addWidget(titleLbl);
+
+    auto* form = new QFormLayout();
+    form->setSpacing(10);
+
+    auto* skewXSpin = new QDoubleSpinBox(&dlg);
+    skewXSpin->setRange(-2.0, 2.0);
+    skewXSpin->setSingleStep(0.05);
+    skewXSpin->setValue(0.3);
+    skewXSpin->setFixedHeight(32);
+    skewXSpin->setStyleSheet("background: #141c2e; color: #f1f5f9; border: 1px solid #243049; border-radius: 6px; padding: 4px;");
+
+    auto* skewYSpin = new QDoubleSpinBox(&dlg);
+    skewYSpin->setRange(-2.0, 2.0);
+    skewYSpin->setSingleStep(0.05);
+    skewYSpin->setValue(0.0);
+    skewYSpin->setFixedHeight(32);
+    skewYSpin->setStyleSheet("background: #141c2e; color: #f1f5f9; border: 1px solid #243049; border-radius: 6px; padding: 4px;");
+
+    form->addRow("Horizontal Skew:", skewXSpin);
+    form->addRow("Vertical Skew:", skewYSpin);
+    layout->addLayout(form);
+
+    auto* btnBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    btnBox->button(QDialogButtonBox::Ok)->setText("Apply");
+    btnBox->button(QDialogButtonBox::Ok)->setStyleSheet(kApplyBtnStyle);
+    btnBox->button(QDialogButtonBox::Cancel)->setStyleSheet(kSmallActionBtnStyle);
+    connect(btnBox, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(btnBox, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    layout->addWidget(btnBox);
+
+    if (dlg.exec() == QDialog::Accepted) {
+        float sx = static_cast<float>(skewXSpin->value());
+        float sy = static_cast<float>(skewYSpin->value());
+        if (m_target->isSticker()) {
+            StickerItem* sticker = m_target->sticker();
+            sticker->pushSnapshot();
+            QImage prev = m_service->applySkewToQImage(sx, sy, sticker->committedImage());
+            sticker->setCommittedImage(prev);
+            m_topBar->setUndoEnabled(sticker->canUndo());
+            m_topBar->setRedoEnabled(sticker->canRedo());
+        } else {
+            m_service->applySkew(sx, sy);
+        }
+    }
+}
+
+void MainWindow::onOpenOilPaintingDialog()
+{
+    if (!m_service->hasImage()) return;
+
+    QDialog dlg(this);
+    dlg.setWindowTitle("Oil Painting Effect");
+    dlg.setFixedWidth(320);
+    dlg.setStyleSheet("background: #0f1524; color: #cbd5e1; font-size: 12px;");
+
+    auto* layout = new QVBoxLayout(&dlg);
+    layout->setContentsMargins(18, 18, 18, 18);
+    layout->setSpacing(14);
+
+    auto* titleLbl = new QLabel("Oil Painting Settings", &dlg);
+    titleLbl->setStyleSheet("font-size: 14px; font-weight: 700; color: #38bdf8;");
+    layout->addWidget(titleLbl);
+
+    auto* form = new QFormLayout();
+    form->setSpacing(10);
+
+    auto* radiusSpin = new QSpinBox(&dlg);
+    radiusSpin->setRange(1, 20);
+    radiusSpin->setValue(4);
+    radiusSpin->setFixedHeight(32);
+    radiusSpin->setStyleSheet("background: #141c2e; color: #f1f5f9; border: 1px solid #243049; border-radius: 6px; padding: 4px;");
+
+    auto* levelsSpin = new QSpinBox(&dlg);
+    levelsSpin->setRange(2, 64);
+    levelsSpin->setValue(20);
+    levelsSpin->setFixedHeight(32);
+    levelsSpin->setStyleSheet("background: #141c2e; color: #f1f5f9; border: 1px solid #243049; border-radius: 6px; padding: 4px;");
+
+    form->addRow("Brush Radius (1-20):", radiusSpin);
+    form->addRow("Intensity Levels (2-64):", levelsSpin);
+    layout->addLayout(form);
+
+    auto* btnBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    btnBox->button(QDialogButtonBox::Ok)->setText("Apply");
+    btnBox->button(QDialogButtonBox::Ok)->setStyleSheet(kApplyBtnStyle);
+    btnBox->button(QDialogButtonBox::Cancel)->setStyleSheet(kSmallActionBtnStyle);
+    connect(btnBox, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(btnBox, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    layout->addWidget(btnBox);
+
+    if (dlg.exec() == QDialog::Accepted) {
+        int r = radiusSpin->value();
+        int l = levelsSpin->value();
+        if (m_target->isSticker()) {
+            StickerItem* sticker = m_target->sticker();
+            sticker->pushSnapshot();
+            QImage prev = m_service->applyOilPaintingToQImage(r, l, sticker->committedImage());
+            sticker->setCommittedImage(prev);
+            m_topBar->setUndoEnabled(sticker->canUndo());
+            m_topBar->setRedoEnabled(sticker->canRedo());
+        } else {
+            m_service->applyOilPainting(r, l);
+        }
     }
 }
 

@@ -33,6 +33,8 @@
 #include "ImageProcessing/Filters/Hue/HueFilter.h"
 #include "ImageProcessing/Filters/Wanw/WanoFilter.h"
 #include "ImageProcessing/Filters/ResizeFilter/ResizeFilter.h"
+#include "ImageProcessing/Filters/SkewFilter/SkewFilter.h"
+#include "ImageProcessing/Filters/OilPaintingFilter/OilPaintingFilter.h"
 
 #include <QApplication>
 #include <QPalette>
@@ -100,6 +102,10 @@ static void registerBackendFilters(FilterRegistry& registry)
         "Border Frame", "Effects", "#ec4899",
         std::make_shared<FrameFilter>()
     });
+    registry.registerFilter({
+        "Oil Painting", "Effects", "#eab308",
+        std::make_shared<OilPaintingFilter>(4, 20)
+    });
 
     // ── Adjustments ──
     registry.registerFilter({
@@ -139,6 +145,10 @@ static void registerBackendFilters(FilterRegistry& registry)
     registry.registerFilter({
         "Resize Image", "Tools", "#06b6d4",
         std::make_shared<ResizeFilter>(800, 600)
+    });
+    registry.registerFilter({
+        "Skew Image", "Tools", "#06b6d4",
+        std::make_shared<SkewFilter>(0.3f, 0.0f)
     });
 }
 

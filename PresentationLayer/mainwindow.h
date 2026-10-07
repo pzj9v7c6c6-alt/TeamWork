@@ -80,6 +80,8 @@ private slots:
     void onApplyFreeCrop();
     void onCancelFreeCrop();
     void onOpenResizeDialog();
+    void onOpenSkewDialog();
+    void onOpenOilPaintingDialog();
 
     // External workspace drop
     void handleWorkspaceImageDropped(const QString& path);

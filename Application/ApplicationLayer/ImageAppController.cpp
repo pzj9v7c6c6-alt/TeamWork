@@ -20,6 +20,8 @@
 #include "ImageProcessing/Filters/TVScanlines/TVScanlinesFilter.h"
 #include "ImageProcessing/Filters/WanoPurple/WanoPurpleFilter.h"
 #include "ImageProcessing/Filters/Wanw/WanoFilter.h"
+#include "ImageProcessing/Filters/SkewFilter/SkewFilter.h"
+#include "ImageProcessing/Filters/OilPaintingFilter/OilPaintingFilter.h"
 
 ImageAppController::ImageAppController() {
 
@@ -49,6 +51,8 @@ ImageAppController::ImageAppController() {
     registerFilter(FilterType::TVScanlines, std::make_shared<TVScanlinesFilter>());
     registerFilter(FilterType::WanoPurple, std::make_shared<WanoPurpleFilter>());
     registerFilter(FilterType::Wanw, std::make_shared<WanoFilter>());
+    registerFilter(FilterType::Skew, std::make_shared<SkewFilter>(0.3f, 0.0f));
+    registerFilter(FilterType::OilPainting, std::make_shared<OilPaintingFilter>(4, 20));
 }
 
 bool ImageAppController::applyFilter(FilterType type, Image& img) {

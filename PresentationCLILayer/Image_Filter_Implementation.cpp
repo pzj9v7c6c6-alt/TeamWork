@@ -6,6 +6,8 @@
 #include <mmsystem.h>
 #include <shellapi.h>
 #include "../Application/ApplicationLayer/ImageAppController.h"
+#include "../Application/ImageProcessing/Filters/SkewFilter/SkewFilter.h"
+#include "../Application/ImageProcessing/Filters/OilPaintingFilter/OilPaintingFilter.h"
 
 using namespace std;
 
@@ -33,6 +35,8 @@ void showMenu() {
     cout << " 17. TV Scanlines\n";
     cout << " 18. Wano Purple\n";
     cout << " 19. Wanw\n";
+    cout << " 20. Skew\n";
+    cout << " 21. Oil Painting\n";
     cout << "  0. Exit\n";
     cout << "========================================\n";
 }
@@ -124,7 +128,7 @@ int main() {
                 if (!(cin >> choice)) {
 
                     cout << "\n[Error] Invalid input.\n";
-                    cout << "Please enter a number from 0 to 19.\n";
+                    cout << "Please enter a number from 0 to 21.\n";
 
                     cin.clear();
                     cin.ignore(10000, '\n');
@@ -141,10 +145,10 @@ int main() {
 
 
 
-                if (choice < 1 || choice > 19) {
+                if (choice < 1 || choice > 21) {
 
                     cout << "\n[Error] Invalid filter choice.\n";
-                    cout << "Please choose a number from 1 to 19.\n";
+                    cout << "Please choose a number from 1 to 21.\n";
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     cin.get();
 
@@ -157,18 +161,57 @@ int main() {
 
 
                 try {
-
-                    if (!controller.applyFilter(selectedFilter, image)) {
-
-                        cout << "\n[Error] The filter could not be applied.\n";
-                        cout << "Returning to the menu...\n";
-                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                        cin.get();
-
-                        continue;
+                    if (selectedFilter == FilterType::Skew) {
+                        float sx = 0.3f;
+                        float sy = 0.0f;
+                        cout << "\nEnter horizontal skew factor (e.g., 0.3, or 0 for none): ";
+                        if (!(cin >> sx)) {
+                            cin.clear();
+                            cin.ignore(10000, '\n');
+                            sx = 0.3f;
+                        }
+                        cout << "Enter vertical skew factor (e.g., 0.0, or 0 for none): ";
+                        if (!(cin >> sy)) {
+                            cin.clear();
+                            cin.ignore(10000, '\n');
+                            sy = 0.0f;
+                        }
+                        SkewFilter customSkew(sx, sy);
+                        customSkew.apply(image);
+                        cout << "\n[Success] Filter applied successfully!\n";
                     }
+                    else if (selectedFilter == FilterType::OilPainting) {
+                        int radius = 4;
+                        int levels = 20;
+                        cout << "\nEnter brush radius (e.g., 4): ";
+                        if (!(cin >> radius)) {
+                            cin.clear();
+                            cin.ignore(10000, '\n');
+                            radius = 4;
+                        }
+                        cout << "Enter intensity levels (e.g., 20): ";
+                        if (!(cin >> levels)) {
+                            cin.clear();
+                            cin.ignore(10000, '\n');
+                            levels = 20;
+                        }
+                        OilPaintingFilter customOil(radius, levels);
+                        customOil.apply(image);
+                        cout << "\n[Success] Filter applied successfully!\n";
+                    }
+                    else {
+                        if (!controller.applyFilter(selectedFilter, image)) {
 
-                    cout << "\n[Success] Filter applied successfully!\n";
+                            cout << "\n[Error] The filter could not be applied.\n";
+                            cout << "Returning to the menu...\n";
+                            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                            cin.get();
+
+                            continue;
+                        }
+
+                        cout << "\n[Success] Filter applied successfully!\n";
+                    }
                 }
                 catch (const exception& ex) {
 
