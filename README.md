@@ -9,7 +9,7 @@ The application provides 16 image processing filters and operations through an i
 ✨ Features
 
 * 🖼️ Before / After Preview — Compare the original and processed images.
-* 🎨 16 Image Filters & Operations — Including Blur, Crop, Resize, Merge, Infrared, Brightness, Frames, and more.
+* 🎨 21 Image Filters & Operations — Including Blur, Crop, Resize, Merge, Infrared, Brightness, Frames, and more.
 * ↩️ Undo / Redo — Navigate through previous image states.
 * 🎛️ Interactive Qt GUI — Buttons, sliders, dialogs, and custom QSS styling.
 * 💾 Load & Save Images — Import and export image files.
